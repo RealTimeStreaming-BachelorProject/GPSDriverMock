@@ -1,0 +1,23 @@
+{
+  "name": "gpsdrivermock",
+  "version": "1.0.0",
+  "description": "Mocking a postdriver by sending real time GPS locations to some server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RealTimeStreaming-BachelorProject/GPSDriverMock.git"
+  },
+  "author": "omvk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RealTimeStreaming-BachelorProject/GPSDriverMock/issues"
+  },
+  "homepage": "https://github.com/RealTimeStreaming-BachelorProject/GPSDriverMock#readme",
+  "dependencies": {
+    "socket.io-client": "^3.1.1"
+  }
+}
