@@ -1,7 +1,9 @@
 const { Socket, io } = require("socket.io-client");
 const fs = require("fs");
 const { env } = require("process");
+const driverinfo = require("./driverinfo")
 
+driverinfo.uuid = env.DRIVERID ?? driverinfo.uuid;
 const driverSerivceURL = env.DRIVER_SERVICE_URL ?? "ws://localhost:5001/drivers";
 console.log(driverSerivceURL);
 const routename = env.ROUTENAME ?? "route1";
@@ -16,12 +18,14 @@ const routes = JSON.parse(rawrouteData);
 const routeCoordinates = routes[routename]["coordinates"];
 
 socket.on("connect", () => {
-  console.log("I am connected");
+  console.log("I am connected, sending JWT");
+  socket.emit("driver_auth", { jwt: driverinfo.jwt, username: driverinfo.username })
   continouslySendCoordinates(routeCoordinates);
 });
 
 socket.on("disconnect", () => {
     console.log("I disconnected");
+    socket.disconnect();
 })
 
 async function continouslySendCoordinates(coordinates) {
@@ -31,6 +35,7 @@ async function continouslySendCoordinates(coordinates) {
       counter = 0; // reset back to start of route
     }
     let coordinate = coordinates[counter++];
-    socket.emit("set-position", coordinate);
+    console.log(coordinate)
+    socket.emit("new_coordinates", { coordinate: coordinate, userid: driverinfo.uuid });
   }, driverUpdateInterval);
 }
