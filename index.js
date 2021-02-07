@@ -2,7 +2,7 @@ const { Socket, io } = require("socket.io-client");
 const fs = require("fs");
 const { env } = require("process");
 
-const driverSerivceURL = env.DRIVER_SERVICE_URL ?? "ws://localhost:5001";
+const driverSerivceURL = env.DRIVER_SERVICE_URL ?? "ws://localhost:5001/drivers";
 console.log(driverSerivceURL);
 const routename = env.ROUTENAME ?? "route1";
 console.log(routename);
