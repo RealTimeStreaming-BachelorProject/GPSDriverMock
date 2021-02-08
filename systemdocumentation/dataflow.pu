@@ -1,0 +1,77 @@
+@startuml
+hide footbox
+title Coordinate Live Streaming Core Dataflow
+
+actor "Driver" as driver
+participant "DriverApplication" as driverapp
+
+participant "LoginService (HTTP)" as loginservice
+
+participant "DriverService (WebSocket)" as driverservice
+
+Database redis as "Redis cache"
+
+actor "User" as user
+participant "Package Tracking Interface" as userapp
+
+== Driver Initialization/Login ==
+driver -> driverapp : Login (username, password)
+driverapp -> loginservice : CheckCredentials(username, password)
+loginservice -> driverapp : JWT (containing driverID)
+driverapp -> driverservice : InitializeConnection(JWT)
+driverservice -> driverservice : SaveConnectionID
+note left
+The JWT contains a driverID,
+the connectionID will point 
+to the driverID, to save bandwith.
+If driver loses connection during 
+transport. InitializeConnection
+should be called again
+(new connection = new connectionID
+but same driverID)
+end note
+driverapp -> driverapp : Successful Login
+driver -> driverapp : DeliveryStart
+driverapp -> driverservice : DeliveryStart(JWT, packageIDs)
+note left
+packageid is an array which
+contains all the packages
+the delivery driver is 
+going to deliver today
+end note
+driverservice -> redis : AssociatePackagesWithDriver(driverID, packageIDs)
+
+== Package Tracking ==
+user -> userapp : TrackPackage(packageID)
+userapp -> driverservice : FindDriver(packageID)
+driverservice -> redis : FindDriver(packageID)
+return driverID
+driverservice -> driverservice : CreateNewSubscriberOnDriver(driverID, userConnectionID)
+note left
+userConnectionID is the open
+socket connection ID.
+end note
+driverservice -> userapp : NewCoordinate(currentCoordinate)
+alt if user stops watching (closes browser or app)
+    driverservice -> redis : RemoveSubscriberOnDriver(userConnectionID)
+end
+
+== Live Streaming ==
+loop untill driver has delivered all packages
+    driverapp -> driverservice : SendCoordinates(lat, long)
+    driverservice -> driverservice : LookupDriverID(connectionID)
+    driverservice -> redis : SaveCurrentCoordinate(driverID, lat, long)
+    alt if anyone is watching driver location
+        redis -> driverservice : NotifySubscribers
+        note left
+            People who are currently 
+            interested in the drivers 
+            position will get notified 
+            and sent the new coordinates
+        end note
+        driverservice -> userapp : NewCoordinates(lat, long)
+        userapp -> userapp : DisplayNewCoordinatesOnMap(lat, long)
+    end
+end loop
+
+@enduml
