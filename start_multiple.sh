@@ -8,6 +8,6 @@ do
     if ((counter > number_of_unique_routes)); then
         counter=1 # reset back to route 1
     fi
-    docker run -d -e ROUTENAME="route${counter}" -e DRIVER_SERVICE_URL="ws://192.168.50.65:5001/drivers" drivermock
+    docker run -d -e ROUTENAME="route${counter}" -e DRIVER_SERVICE_URL="ws://192.168.50.65:5001/drivers" omvk97/bachelorgpsdrivermock
     ((counter=counter+1))
 done

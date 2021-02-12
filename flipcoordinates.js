@@ -1,6 +1,6 @@
-const fs = require("fs");
+import { readFileSync, writeFileSync } from "fs";
 
-const rawrouteData = fs.readFileSync("./routesOLD.json");
+const rawrouteData = readFileSync("./routesOLD.json");
 const routes = JSON.parse(rawrouteData);
 
 for (const [routename, routeObject] of Object.entries(routes)) {
@@ -15,7 +15,7 @@ for (const [routename, routeObject] of Object.entries(routes)) {
     routeObject.coordinates = flippedCoordinates;
   }
 
-fs.writeFileSync('routes.json', JSON.stringify(routes));
+writeFileSync('routes.json', JSON.stringify(routes));
 
 
 // const routeCoordinates = routes[routename]["coordinates"];

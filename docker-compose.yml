@@ -2,8 +2,7 @@ version: "3"
 
 services:
   coordinate-mock:
-    image: drivermock
-    network_mode: "host"
+    image: omvk97/bachelorgpsdrivermock
     environment:
       ROUTENAME: "route2"
       DRIVER_SERVICE_URL: "ws://192.168.50.65:5001"
