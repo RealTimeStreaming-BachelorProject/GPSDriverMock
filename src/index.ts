@@ -1,24 +1,22 @@
 import io from "socket.io-client";
-import { readFileSync } from "fs";
 import { env } from "process";
 import { username, password, route } from "./driverinfo";
 import { loginToApplication } from "./helpers/api";
-import { DELIVERY_START, DRIVER_INIT, NEW_COORDINATES, PACKAGE_DELIVERED } from "./socketevents";
+import { DELIVERY_START, DRIVER_INIT, NEW_COORDINATES } from "./socketevents";
 import { v4 as uuidv4 } from "uuid";
+import routes from "./routes.json";
+import { listenForSignals } from "./helpers/shutdown";
 
 const driverSerivceURL =
   env.DRIVER_SERVICE_URL ?? "ws://localhost:5001/drivers";
-console.log(driverSerivceURL);
 const routename = env.ROUTENAME ?? "route1";
-console.log(routename);
 const driverUpdateInterval = 3000;
 
-const socket = io(driverSerivceURL);
+const socket = io(driverSerivceURL, {
+  reconnectionAttempts: 5,
+});
 
-const rawrouteData = readFileSync("./routes.json");
-const routes = JSON.parse(rawrouteData.toString());
-
-const routeCoordinates = routes[routename]["coordinates"];
+const routeCoordinates = (routes as any)[routename]["coordinates"];
 
 // Create package uuids which in the real world would be generated somewhere else
 for (var i = 0; i < 100; i++) {
@@ -43,6 +41,7 @@ function continouslySendCoordinates(coordinates: any) {
 }
 
 socket.on("connect", async () => {
+  console.log("🚀 Connected to server");
   try {
     // Get token when connecting
     const token = await loginToApplication(username, password);
@@ -62,3 +61,13 @@ socket.on("disconnect", () => {
   console.log("I disconnected");
   clearInterval(intervalID);
 });
+
+socket.on("error", () => {
+  console.log("WHAT");
+});
+
+socket.on("connect_error", () => {
+  console.log("Can't connect to server");
+});
+
+listenForSignals(socket);
