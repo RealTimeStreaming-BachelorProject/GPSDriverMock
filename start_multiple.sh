@@ -3,7 +3,7 @@
 number_of_unique_routes=2
 
 counter=1
-for i in {1..3} # 10 clients
+for i in {1..100} # 10 clients
 do
     if ((counter > number_of_unique_routes)); then
         counter=1 # reset back to route 1
