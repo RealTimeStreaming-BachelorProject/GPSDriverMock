@@ -11,8 +11,9 @@ do
     docker run -d \
         -e DRIVERUSERNAME=$(cat /dev/random | LC_CTYPE=C tr -dc "[:alpha:]" | head -c 12) \
         -e ROUTENAME="route${counter}" \
-        -e DRIVER_SERVICE_URL="ws://192.168.50.65:5002/drivers" \
-        -e LOGINSERVICE_URL="http://192.168.50.65:5005" \
+        -e DRIVER_SERVICE_URL="ws://driverservice:5002/drivers" \
+        -e LOGINSERVICE_URL="http://loginservice:5005" \
+        --network="dev-network" \
         omvk97/bachelorgpsdrivermock
 
     ((counter=counter+1))
