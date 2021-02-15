@@ -8,7 +8,7 @@ import routes from "./routes.json";
 import { listenForSignals } from "./helpers/shutdown";
 
 const driverSerivceURL =
-  env.DRIVER_SERVICE_URL ?? "ws://localhost:5001/drivers";
+  env.DRIVER_SERVICE_URL ?? "ws://localhost:5002/drivers";
 const routename = env.ROUTENAME ?? "route1";
 const driverUpdateInterval = 3000;
 
@@ -60,10 +60,6 @@ socket.on("connect", async () => {
 socket.on("disconnect", () => {
   console.log("I disconnected");
   clearInterval(intervalID);
-});
-
-socket.on("error", () => {
-  console.log("WHAT");
 });
 
 socket.on("connect_error", () => {
