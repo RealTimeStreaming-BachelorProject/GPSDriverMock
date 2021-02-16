@@ -6,7 +6,6 @@ import {
   DELIVERY_START,
   LATENCY_RESULT,
   NEW_COORDINATES,
-  PING,
 } from "./socketevents";
 import { v4 as uuidv4 } from "uuid";
 import routes from "./routes.json";
@@ -45,15 +44,12 @@ function continouslySendCoordinates(
 }
 
 let latencyIntervalID: NodeJS.Timeout;
-// https://socket.io/docs/v3/migrating-from-2-x-to-3-0/#No-more-%E2%80%9Cpong%E2%80%9D-event-for-retrieving-latency
+
+// https://stackoverflow.com/questions/4071258/how-can-i-find-the-response-time-latency-of-a-client-in-nodejs-with-sockets-s/45216554#45216554
 function latencyTest(socket: SocketIOClient.Socket) {
-  latencyIntervalID = setInterval(() => {
-    const start = Date.now();
-    socket.emit(PING, () => {
-      const latency = Date.now() - start;
-      socket.emit(LATENCY_RESULT, latency); // emit the result back to the server for metrics
-    });
-  }, 5000);
+  socket.on("pong", (heartbeatLatency: number) => {
+    socket.emit(LATENCY_RESULT, heartbeatLatency); // emit the result back to the server for metrics
+  });
 }
 
 function configureEndpoints(socket: SocketIOClient.Socket) {
@@ -76,8 +72,8 @@ function configureEndpoints(socket: SocketIOClient.Socket) {
     clearInterval(latencyIntervalID);
   });
 
-  socket.on("connect_error", (err: any) => {
-    console.log(err);
+  socket.on("connect_error", (err: Error) => {
+    console.log(err.message);
   });
 
   listenForSignals(socket);
@@ -89,15 +85,14 @@ let token: string;
 })()
   .catch((e) => {
     // Deal with the fact the chain failed
-    console.log(e)
+    console.log(e);
   })
   .then(() => {
-    const config: any = {
-      econnectionAttempts: 5,
-      auth: {
-        token: token,
+    const socket = io(driverSerivceURL, {
+      query: {
+        token,
       },
-    };
-    const socket = io(driverSerivceURL, config);
+      reconnectionAttempts: 5,
+    });
     configureEndpoints(socket);
   });
