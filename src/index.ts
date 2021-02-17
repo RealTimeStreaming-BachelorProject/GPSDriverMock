@@ -4,7 +4,6 @@ import { username, password, route } from "./driverinfo";
 import { loginToApplication } from "./helpers/api";
 import {
   DELIVERY_START,
-  LATENCY_RESULT,
   NEW_COORDINATES,
 } from "./socketevents";
 import { v4 as uuidv4 } from "uuid";
@@ -45,13 +44,6 @@ function continouslySendCoordinates(
 
 let latencyIntervalID: NodeJS.Timeout;
 
-// https://stackoverflow.com/questions/4071258/how-can-i-find-the-response-time-latency-of-a-client-in-nodejs-with-sockets-s/45216554#45216554
-function latencyTest(socket: SocketIOClient.Socket) {
-  socket.on("pong", (heartbeatLatency: number) => {
-    socket.emit(LATENCY_RESULT, heartbeatLatency); // emit the result back to the server for metrics
-  });
-}
-
 function configureEndpoints(socket: SocketIOClient.Socket) {
   socket.on("connect", async () => {
     console.log("🚀 Connected to server");
@@ -60,7 +52,6 @@ function configureEndpoints(socket: SocketIOClient.Socket) {
       socket.emit(DELIVERY_START, { packages: route.packages });
 
       continouslySendCoordinates(routeCoordinates, socket);
-      latencyTest(socket);
     } catch (error) {
       console.log(error.message);
     }
