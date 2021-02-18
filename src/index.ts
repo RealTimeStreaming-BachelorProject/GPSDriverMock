@@ -2,17 +2,14 @@ import io from "socket.io-client";
 import { env } from "process";
 import { username, password, route } from "./driverinfo";
 import { loginToApplication } from "./helpers/api";
-import {
-  DELIVERY_START,
-  NEW_COORDINATES,
-} from "./socketevents";
+import { DELIVERY_START, NEW_COORDINATES, AUTHENTICATED, AUTHENTICATE } from "./socketevents";
 import { v4 as uuidv4 } from "uuid";
 import routes from "./routes.json";
 import { listenForSignals } from "./helpers/shutdown";
 
 const driverSerivceURL =
   env.DRIVER_SERVICE_URL ?? "ws://localhost:5002/drivers";
-const routename = env.ROUTENAME ?? "route1";
+const routename = process.env.ROUTENAME ?? "route1";
 const driverUpdateInterval = 3000;
 
 const routeCoordinates = (routes as any)[routename]["coordinates"];
@@ -46,15 +43,22 @@ let latencyIntervalID: NodeJS.Timeout;
 
 function configureEndpoints(socket: SocketIOClient.Socket) {
   socket.on("connect", async () => {
-    console.log("🚀 Connected to server");
-    try {
-      console.log("Starting delivery route");
-      socket.emit(DELIVERY_START, { packages: route.packages });
+    socket
+      .emit(AUTHENTICATE, { token }) // send the jwt
+      .on(AUTHENTICATED, () => {
+        console.log("🚀 Connected to server");
+        try {
+          console.log("Starting delivery route");
+          socket.emit(DELIVERY_START, { packages: route.packages });
 
-      continouslySendCoordinates(routeCoordinates, socket);
-    } catch (error) {
-      console.log(error.message);
-    }
+          continouslySendCoordinates(routeCoordinates, socket);
+        } catch (error) {
+          console.log(error.message);
+        }
+      }).on("unauthorized", (msg: { data: { type: string | undefined; }; }) => {
+        console.log(`unauthorized: ${JSON.stringify(msg.data)}`);
+        throw new Error(msg.data.type);
+      });
   });
 
   socket.on("disconnect", () => {
