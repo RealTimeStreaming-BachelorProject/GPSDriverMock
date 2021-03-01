@@ -1,23 +1,18 @@
 import io from "socket.io-client";
-import { env } from "process";
-import { username, password, route } from "./driverinfo";
+import { username, password } from "./driverinfo";
 import { loginToApplication } from "./helpers/api";
-import { DELIVERY_START, NEW_COORDINATES, AUTHENTICATED, AUTHENTICATE } from "./socketevents";
-import { v4 as uuidv4 } from "uuid";
+import { NEW_COORDINATES, AUTHENTICATED, AUTHENTICATE } from "./socketevents";
 import routes from "./routes.json";
 import { listenForSignals } from "./helpers/shutdown";
+import jwt from "jsonwebtoken";
+import fetch from "node-fetch";
 
-const driverSerivceURL =
-  env.DRIVER_SERVICE_URL ?? "ws://localhost:5002/drivers";
+const driverSerivceURL = process.env.DRIVER_SERVICE_URL as string;
 const routename = process.env.ROUTENAME ?? "route1";
+const packageServiceURL = process.env.PACKAGE_SERVICE_URL;
 const driverUpdateInterval = 3000;
 
 const routeCoordinates = (routes as any)[routename]["coordinates"];
-
-// Create package uuids which in the real world would be generated somewhere else
-for (var i = 0; i < 100; i++) {
-  (route.packages as any).push(uuidv4());
-}
 
 let coordinateIntervalID: NodeJS.Timeout;
 
@@ -48,14 +43,12 @@ function configureEndpoints(socket: SocketIOClient.Socket) {
       .on(AUTHENTICATED, () => {
         console.log("🚀 Connected to server");
         try {
-          console.log("Starting delivery route");
-          socket.emit(DELIVERY_START, { packages: route.packages });
-
           continouslySendCoordinates(routeCoordinates, socket);
         } catch (error) {
           console.log(error.message);
         }
-      }).on("unauthorized", (msg: { data: { type: string | undefined; }; }) => {
+      })
+      .on("unauthorized", (msg: { data: { type: string | undefined } }) => {
         console.log(`unauthorized: ${JSON.stringify(msg.data)}`);
         throw new Error(msg.data.type);
       });
@@ -74,19 +67,35 @@ function configureEndpoints(socket: SocketIOClient.Socket) {
   listenForSignals(socket);
 }
 
+async function registerInRoutePackages(token) {
+  const packagesToDeliver = JSON.parse(
+    process.env.PACKAGES_TO_DELIVER as string
+  );
+  const body = {
+    fakeScenario: true,
+    packageIDs: packagesToDeliver,
+    driverID: (jwt.decode(token) as object)["driverID"],
+  };
+
+  const response = await fetch(packageServiceURL + "/inroute", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((res) => res.json());
+
+  console.log(response);
+}
+
 let token: string;
 (async () => {
   token = await loginToApplication(username, password);
+  await registerInRoutePackages(token);
 })()
   .catch((e) => {
-    // Deal with the fact the chain failed
     console.log(e);
   })
   .then(() => {
     const socket = io(driverSerivceURL, {
-      query: {
-        token,
-      },
       reconnectionAttempts: 5,
     });
     configureEndpoints(socket);

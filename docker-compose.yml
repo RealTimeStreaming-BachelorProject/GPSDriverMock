@@ -2,7 +2,15 @@ version: "3"
 
 services:
   coordinate-mock:
-    image: omvk97/bachelorgpsdrivermock
+    build:
+      context: ./
+      dockerfile: dockerfile.dev
+    container_name: drivermock
     environment:
       ROUTENAME: "route2"
-      DRIVER_SERVICE_URL: "ws://192.168.50.65:5001"
+      PACKAGES_TO_DELIVER: '["1b317ac5-0e4a-411f-8465-7f95e2e9ca89", "63786714-8bf1-45c3-9f9f-d45cd714e0c6"]'
+      LOGINSERVICE_URL: "http://192.168.50.65:5005"
+      DRIVER_SERVICE_URL: "ws://192.168.50.65:5002/drivers"
+      PACKAGE_SERVICE_URL: "http://192.168.50.65:9001/packages"
+    volumes:
+      - ./src:/opt/app/src/ # for dev purposes
